@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+
+# Virtual environment
+.venv/
+venv/
+env/
+.env/
+
+# Editor/IDE specific files
+.vscode/
+.idea/
+*.swp
+*.bak
+*.swo
+
+# Poetry specific
+# It is generally recommended to commit poetry.lock, but if you choose not to:
+# poetry.lock
+
+# Database files (if applicable)
+*.sqlite3
+*.db
+/data/*.db
+
+# Log files
+*.log
+logs/
+
+# Uploaded files/media (if applicable)
+/media/
+/uploads/
+
+# Configuration files
+.env
+config.ini
