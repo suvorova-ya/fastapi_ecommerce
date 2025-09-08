@@ -1,5 +1,5 @@
 from typing import List, Optional
-from app.models.products import Product
+
 from sqlalchemy import String, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
