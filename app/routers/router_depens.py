@@ -1,4 +1,4 @@
-from fastapi import Body, Depends, HTTPException
+from fastapi import  Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ def valid_category_id(category_id: int , db: Session = Depends(get_db)):
                                        CategoryModel.is_active == True)
     db_category = db.scalars(stmt).first()
     if db_category is None:
-        raise HTTPException(status_code=400, detail="Category_id not found")
+        raise HTTPException(status_code=400, detail="Category not found or inactive")
     return db_category
 
 
@@ -22,5 +22,5 @@ def valid_product_id(product_id: int, db: Session = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True)
     db_product = db.scalars(stmt).first()
     if db_product is None:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(status_code=404, detail="Product not found or inactive")
     return db_product

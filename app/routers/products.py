@@ -1,10 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.models import Product as ProductModel, Category as CategoryModel
+from app.models import Product as ProductModel
 from app.routers.router_depens import valid_category_id, valid_product_id
 from app.schemas import Product as ProductShema, ProductCreate
 from app.db_depends import get_db
@@ -19,7 +19,7 @@ router = APIRouter(
 
 
 
-@router.get("/", response_model=List[ProductShema], status_code=status.HTTP_200_OK)
+@router.get("/", response_model=List[ProductShema])
 async def get_all_products(db: Session = Depends(get_db)):
     """
     Возвращает список всех товаров.
@@ -38,11 +38,11 @@ async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     valid_category_id(product.category_id,db)
 
     #Создаёт товар с полями из ProductCreate
-    db_products = ProductModel(**product.model_dump())
-    db.add(db_products)
+    db_product = ProductModel(**product.model_dump())
+    db.add(db_product)
     db.commit()
-    db.refresh(db_products)
-    return db_products
+    db.refresh(db_product)
+    return db_product
 
 
 @router.get("/category/{category_id}", response_model=list[ProductShema] ,status_code=status.HTTP_200_OK)
@@ -96,7 +96,10 @@ async def delete_product(product_id: int,  db: Session = Depends(get_db)):
     Удаляет товар по его ID.
     """
     # Проверяет, существует ли активный товар с указанным product_id
-    valid_product_id(product_id, db)
+    product = valid_product_id(product_id, db)
+    # Проверяем, существует ли активная категория
+    valid_category_id(product.category_id, db)
+
     db.execute(
         update(ProductModel).where(ProductModel.id == product_id).values(is_active=False))
     db.commit()
