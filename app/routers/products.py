@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import Product as ProductModel
 from app.routers.router_depens import valid_category_id, valid_product_id
 from app.schemas import Product as ProductShema, ProductCreate
-from app.db_depends import get_db
+from app.db.db_depends import get_db
 
 
 # Создаём маршрутизатор для товаров

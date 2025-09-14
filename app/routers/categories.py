@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.categories import Category as CategoryModel
 from app.schemas import Category as CategoryShema, CategoryCreate
-from app.db_depends import get_db
+from app.db.db_depends import get_db
 
 
 # Создаём маршрутизатор с префиксом и тегом

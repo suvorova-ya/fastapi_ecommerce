@@ -2,7 +2,7 @@ from fastapi import  Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db_depends import get_db
+from app.db.db_depends import get_db
 from app.models import Product as ProductModel, Category as CategoryModel
 
 
