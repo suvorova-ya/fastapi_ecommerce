@@ -1,15 +1,13 @@
-from sqlalchemy.orm import Session
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.database import async_session_maker
 
-from app.db.database import SessionLocal
-
-def get_db() -> Session:
+async def get_asunc_db() -> AsyncGenerator[AsyncSession, None]:
     """
-       Зависимость для получения сессии базы данных.
-       Создаёт новую сессию для каждого запроса и закрывает её после обработки.
-       """
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    Предоставляет асинхронную сессию SQLAlchemy для работы с базой данных PostgreSQL.
+    """
+    async with async_session_maker() as session:
+        yield session
+
+
 

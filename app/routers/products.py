@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import Product as ProductModel
 from app.routers.router_depens import valid_category_id, valid_product_id
 from app.schemas import Product as ProductShema, ProductCreate
-from app.db.db_depends import get_db
+from app.db.db_depends import get_asunc_db
 
 
 # Создаём маршрутизатор для товаров
@@ -20,7 +20,7 @@ router = APIRouter(
 
 
 @router.get("/", response_model=List[ProductShema])
-async def get_all_products(db: Session = Depends(get_db)):
+async def get_all_products(db: Session = Depends(get_asunc_db)):
     """
     Возвращает список всех товаров.
     """
@@ -30,7 +30,7 @@ async def get_all_products(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=ProductShema, status_code=status.HTTP_201_CREATED)
-async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+async def create_product(product: ProductCreate, db: Session = Depends(get_asunc_db)):
     """
     Создаёт новый товар.
     """
@@ -46,7 +46,7 @@ async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/category/{category_id}", response_model=list[ProductShema] ,status_code=status.HTTP_200_OK)
-async def get_products_by_category(category_id: int, db: Session = Depends(get_db)):
+async def get_products_by_category(category_id: int, db: Session = Depends(get_asunc_db)):
     """
     Возвращает список товаров в указанной категории по её ID.
     """
@@ -62,7 +62,7 @@ async def get_products_by_category(category_id: int, db: Session = Depends(get_d
 
 
 @router.get("/{product_id}", response_model=ProductShema, status_code=status.HTTP_200_OK)
-async def get_product(product_id: int, db: Session = Depends(get_db)):
+async def get_product(product_id: int, db: Session = Depends(get_asunc_db)):
     """
     Возвращает детальную информацию о товаре по его ID.
     """
@@ -70,7 +70,7 @@ async def get_product(product_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{product_id}", response_model=ProductShema)
-async def update_product(product_id: int, product: ProductCreate,  db: Session =Depends(get_db)):
+async def update_product(product_id: int, product: ProductCreate,  db: Session =Depends(get_asunc_db)):
     """
     Обновляет товар по его ID.
     """
@@ -91,7 +91,7 @@ async def update_product(product_id: int, product: ProductCreate,  db: Session =
 
 
 @router.delete("/{product_id}",status_code=status.HTTP_200_OK)
-async def delete_product(product_id: int,  db: Session = Depends(get_db)):
+async def delete_product(product_id: int,  db: Session = Depends(get_asunc_db)):
     """
     Удаляет товар по его ID.
     """
