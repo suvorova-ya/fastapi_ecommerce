@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.routers import categories
 from app.routers import products
+from app.routers import users
 
 
 
@@ -17,6 +18,7 @@ app = FastAPI(
 # Подключаем маршруты категорий
 app.include_router(categories.router)
 app.include_router(products.router)
+app.include_router(users.router)
 
 
 # Корневой эндпоинт для проверки
