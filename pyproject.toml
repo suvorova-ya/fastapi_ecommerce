@@ -16,6 +16,9 @@ asyncpg = "^0.30.0"
 greenlet = "^3.2.4"
 pydantic-settings = "^2.10.1"
 argon2-cffi = "^25.1.0"
+pyjwt = "^2.10.1"
+python-dotenv = "^1.1.1"
+python-multipart = "^0.0.20"
 
 
 [build-system]
