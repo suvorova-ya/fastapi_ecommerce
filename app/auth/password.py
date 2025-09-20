@@ -2,13 +2,12 @@ from argon2 import PasswordHasher, exceptions
 from datetime import datetime,timedelta,timezone
 import jwt
 
-from app.auth.config import SECRET_KEY,ALGORITHM
+from app.utils import SECRET_KEY,ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
 
 
 # Создаём экземпляр PasswordHasher с настройками по умолчанию
 ph = PasswordHasher()
-
 
 
 def  hash_password(password:str) -> str:
@@ -58,12 +57,30 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
            token_type: Тип токена (access, refresh)
        Возвращает:
            str: Закодированный JWT токен
-       """
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=30)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
+    """
+        Создаёт refresh токен с указанным или стандартным временем жизни.
+        Аргументы:
+            data: Данные для кодирования в токен
+           expires_delta: Время жизни токена (если None, используется стандартное)
+        Возвращает:
+            dict: JWT refresh токен
+     """
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)  # дольше жизни
+    to_encode.update({"exp": expire, "type": "refresh"})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
