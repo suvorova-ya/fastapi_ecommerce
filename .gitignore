@@ -31,6 +31,7 @@ env/
 *.log
 logs/
 
+
 # Uploaded files/media (if applicable)
 /media/
 /uploads/
@@ -38,3 +39,4 @@ logs/
 # Configuration files
 .env
 config.ini
+utils.py
