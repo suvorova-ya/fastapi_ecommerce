@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.4
+
 FROM python:3.12-slim
 
 ENV HOME=/home/fast \
@@ -25,8 +27,12 @@ COPY pyproject.toml poetry.lock* ./
 # Настраиваем Poetry
 RUN poetry config virtualenvs.create false
 
-# Устанавливаем зависимости
-RUN poetry install --no-root --no-interaction --no-ansi
+#  Устанавливаем зависимости с кэшированием
+RUN --mount=type=cache,target=/root/.cache/pypoetry \
+    --mount=type=cache,target=/root/.cache/pip \
+    poetry install --no-root --no-interaction --no-ansi
+
+
 
 # копируем приложение
 COPY app app
