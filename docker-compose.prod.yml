@@ -1,3 +1,4 @@
+name: fastapi-ecommerce-prod
 services:
   web:
     # Берем Dockerfile из каталога app
@@ -6,8 +7,8 @@ services:
       dockerfile: ./app/Dockerfile.prod
       # Запускаем сервер Gunicorn
     command:  gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-    ports:
-      - 8000:8000
+#    ports:
+#      - 8000:8000
     env_file:
       - .env
     depends_on:
@@ -19,13 +20,20 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env
-    ports:
-      - "5433:5432"
+#    ports:
+#      - "5433:5432"
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     restart: always
+
+  nginx:
+    build: nginx
+    ports:
+     - 80:80
+    depends_on:
+      - web
 
 volumes:
   postgres_data:
