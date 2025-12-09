@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -27,3 +27,19 @@ class Product(ProductCreate):
     is_active: bool = Field(description="Активность товара")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductList(BaseModel):
+    """
+    Список товаров для пагинации
+    """
+    items: List[Product] = Field(description="Товары для текущей стрваницы")
+    total: int = Field(ge=0, description="Общее количество товаров")
+    page: int = Field(ge=1, description="Номер текущей страницы")
+    page_size: int = Field(ge=1, description="Количество элементов на странице")
+
+    model_config = ConfigDict(from_attributes=True)  # Для чтения из ORM-объектов
+
+
+
+

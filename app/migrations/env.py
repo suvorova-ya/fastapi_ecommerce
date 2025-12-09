@@ -6,11 +6,11 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from app.db.database import Base
-from app import models
-from alembic import context
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from alembic import context
+from app.db.database import Base
+from app import models
 from app.db.config import settings
 
 # this is the Alembic Config object, which provides

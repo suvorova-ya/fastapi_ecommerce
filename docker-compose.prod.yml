@@ -20,8 +20,8 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env
-#    ports:
-#      - "5433:5432"
+    ports:
+      - "127.0.0.1:5435:5432"
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}

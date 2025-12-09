@@ -4,13 +4,17 @@ services:
     build:
       context: .
       dockerfile: ./app/Dockerfile
-    command:  uvicorn app.main:app --host 0.0.0.0
+    command:  uvicorn app.main:app --host 0.0.0.0 --reload
     ports:
       - 8000:8000
     env_file:
       - .env
     depends_on:
-      - db
+       - db
+    volumes:
+      - ./app:/home/fast/app
+      - ./alembic.ini:/home/fast/alembic.ini
+
 
   db:
     image: postgres:15
