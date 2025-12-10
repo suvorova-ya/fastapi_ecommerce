@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Query
-from sqlalchemy import select, update, func, desc
+from sqlalchemy import select, update, func, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Product as ProductModel, User as UserModel
+from ..models import Product as ProductModel, User as UserModel
 from app.routers.router_depens import valid_category_id, valid_product_id
 from app.schemas.products import ProductCreate, Product as ProductShema, ProductList
 from app.db.db_depends import get_async_db
@@ -62,20 +62,42 @@ async def get_all_products(
     total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
 
     rank_col = None
+    word_sum_col = None  #  для хранения коэффициента схожести триграмм
     if search:
         search_value = search.strip()
         if search_value:
-            ts_query = func.websearch_to_tsquery('english', search_value)
-            filters.append(ProductModel.tsv.op('@@')(ts_query))
-            rank_col = func.ts_rank_cd(ProductModel.tsv, ts_query).label("rank")
+            # 1. FTS часть
+            ts_query_simple = func.websearch_to_tsquery('simple', search_value)
+            ts_query_ru = func.websearch_to_tsquery('russian', search_value)
+
+            # Ищем совпадение в любой из двух конфигураций
+            ts_match_any = or_(
+                ProductModel.tsv.op('@@')(ts_query_simple),
+                ProductModel.tsv.op('@@')(ts_query_ru),
+            )
+            # берем ранг максимальный из двух
+            rank_col = func.greatest(
+                func.coalesce(func.ts_rank_cd(ProductModel.tsv, ts_query_simple), 0),
+                func.coalesce(func.ts_rank_cd(ProductModel.tsv, ts_query_ru), 0),
+            ).label("rank")
+
+            # 2. Триграммная часть
+            word_sum_expr = func.word_similarity(ProductModel.name, search_value)
+            word_sum_col = word_sum_expr.label("word_sim")
+            trgm_condition = word_sum_expr > 0.3
+
+            filters.append(or_(ts_match_any, trgm_condition))
             total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
 
     total = await db.scalar(total_stmt) or 0
 
-    # Основной запрос (если есть поиск — добавим ранг в выборку и сортировку)
-    if rank_col is not None:
-        products_stmt = (select(ProductModel, rank_col).where(*filters)
-                         .order_by(desc(rank_col), ProductModel.id).offset((page - 1) * page_size).limit(page_size)
+    # Основной запрос (если есть поиск — добавим ранг и схожесть в выборку и сортировку)
+    if search:
+        select_cols = [ProductModel, rank_col, word_sum_col]
+        order_by_clauses = [desc(rank_col), desc(word_sum_col), ProductModel.id]
+
+        products_stmt = (select(*select_cols).where(*filters)
+                         .order_by(*order_by_clauses).offset((page - 1) * page_size).limit(page_size)
                          )
         result = await db.execute(products_stmt)
         rows = result.all()
