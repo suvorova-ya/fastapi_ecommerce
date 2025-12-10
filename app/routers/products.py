@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Query
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Product as ProductModel, User as UserModel
@@ -16,13 +16,13 @@ router = APIRouter(
 )
 
 
-
 @router.get("/", response_model=ProductList)
 async def get_all_products(
-        page: int = Query(1,ge=1),
-        page_size: int = Query(20,ge=1,le=100),
+        page: int = Query(1, ge=1),
+        page_size: int = Query(20, ge=1, le=100),
         category_id: int | None = Query(
             None, description="ID категории для фильтрации"),
+        search: str | None = Query(None, min_length=1, description="Поиск по названию товара"),
         min_price: float | None = Query(
             None, ge=0, description="Минимальная цена товара"),
         max_price: float | None = Query(
@@ -45,7 +45,7 @@ async def get_all_products(
         )
 
     # Формируем список фильтров
-    filters = [ProductModel.is_active == True]
+    filters = [ProductModel.is_active.is_(True)]
 
     if category_id is not None:
         filters.append(ProductModel.category_id == category_id)
@@ -58,18 +58,39 @@ async def get_all_products(
     if seller_id is not None:
         filters.append(ProductModel.seller_id == seller_id)
 
-        # Подсчёт общего количества с учётом фильтров
+    # Базовый запрос total
     total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
 
+    rank_col = None
+    if search:
+        search_value = search.strip()
+        if search_value:
+            ts_query = func.websearch_to_tsquery('english', search_value)
+            filters.append(ProductModel.tsv.op('@@')(ts_query))
+            rank_col = func.ts_rank_cd(ProductModel.tsv, ts_query).label("rank")
+            total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
+
     total = await db.scalar(total_stmt) or 0
-    product_stmt = select(ProductModel).where(*filters).order_by(ProductModel.id).offset(
-        (page - 1) * page_size).limit(page_size)
-    items = (await db.scalars(product_stmt)).all()
+
+    # Основной запрос (если есть поиск — добавим ранг в выборку и сортировку)
+    if rank_col is not None:
+        products_stmt = (select(ProductModel, rank_col).where(*filters)
+                         .order_by(desc(rank_col), ProductModel.id).offset((page - 1) * page_size).limit(page_size)
+                         )
+        result = await db.execute(products_stmt)
+        rows = result.all()
+        items = [row[0] for row in rows]
+    else:
+        products_stmt = (select(ProductModel).where(*filters)
+                         .order_by(ProductModel.id).offset((page - 1) * page_size).limit(page_size)
+                         )
+        items = (await db.scalars(products_stmt)).all()
+
     return {
-        "items" : items,
-        "total" : total,
-        "page" : page,
-        "page_size" : page_size
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size
     }
 
 
@@ -92,17 +113,17 @@ async def create_product(product: ProductCreate,
         404 Not Found: Если категория не существует или неактивна
     """
     # Проверяет существование category_id и что она не в "архиве"
-    await valid_category_id(product.category_id,db)
+    await valid_category_id(product.category_id, db)
 
-    #Создаёт товар с полями из ProductCreate
-    db_product = ProductModel(**product.model_dump(), seller_id = current_user.id)
+    # Создаёт товар с полями из ProductCreate
+    db_product = ProductModel(**product.model_dump(), seller_id=current_user.id)
     db.add(db_product)
     await db.commit()
     await db.refresh(db_product)
     return db_product
 
 
-@router.get("/category/{category_id}", response_model=list[ProductShema] ,status_code=status.HTTP_200_OK)
+@router.get("/category/{category_id}", response_model=list[ProductShema], status_code=status.HTTP_200_OK)
 async def get_products_by_category(category_id: int, db: AsyncSession = Depends(get_async_db)):
     """
     Доступ: Разрешён всем (аутентификация не требуется).
@@ -116,15 +137,14 @@ async def get_products_by_category(category_id: int, db: AsyncSession = Depends(
     Исключения:
         404 Not Found: Если категория не существует или неактивна
     """
-    #Проверяет, существует ли категория с указанным category_id и она не в архиве
+    # Проверяет, существует ли категория с указанным category_id и она не в архиве
     await valid_category_id(category_id, db)
 
-    #Возвращает список всех товаров
+    # Возвращает список всех товаров
     products = await db.scalars(select(ProductModel).where(ProductModel.category_id == category_id,
-                                         ProductModel.is_active == True))
+                                                           ProductModel.is_active == True))
 
     return products.all()
-
 
 
 @router.get("/{product_id}", response_model=ProductShema, status_code=status.HTTP_200_OK)
@@ -142,7 +162,7 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_async_db))
         404 Not Found: Если товар не существует или неактивен
     """
     # Проверяем, существует ли активный товар
-    product = await valid_product_id(product_id,db)
+    product = await valid_product_id(product_id, db)
 
     # Проверяем, существует ли активная категория
     await valid_category_id(product.category_id, db)
@@ -173,10 +193,10 @@ async def update_product(product_id: int, product: ProductCreate, db: AsyncSessi
     if db_product.seller_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only update your own products")
 
-    #Проверяет, существует ли категория с указанным category_id и она не в архиве
+    # Проверяет, существует ли категория с указанным category_id и она не в архиве
     await valid_category_id(product.category_id, db)
 
-    #Обновляем товар
+    # Обновляем товар
     await db.execute(
         update(ProductModel).where(ProductModel.id == product_id).values(**product.model_dump())
     )
@@ -185,8 +205,7 @@ async def update_product(product_id: int, product: ProductCreate, db: AsyncSessi
     return db_product
 
 
-
-@router.delete("/{product_id}",status_code=status.HTTP_200_OK)
+@router.delete("/{product_id}", status_code=status.HTTP_200_OK)
 async def delete_product(product_id: int, db: AsyncSession = Depends(get_async_db),
                          current_user: UserModel = Depends(get_current_seller)):
     """
