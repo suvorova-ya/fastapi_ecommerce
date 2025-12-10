@@ -70,16 +70,18 @@ Docker-контейнеризация**
  - ALGORITHM
 
 ```bash
-git clone https://github.com/suvorova-ya/repo.git
-cd repo
+git clone https://github.com/suvorova-ya/fastapi_ecommerce.git
+cd fastapi_ecommerce
 
-alembic upgrade head
+docker compose -f docker-compose.yml up -d
 
-docker-compose up --build
+docker compose exec web alembic revision --autogenerate -m "Create table"
 
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+docker compose exec web alembic upgrade head   
 
- FastAPI API: http://localhost:8000/docs
+документация доступна:	
+FastAPI API: http://localhost:8000/docs
+
 ```
    
 
