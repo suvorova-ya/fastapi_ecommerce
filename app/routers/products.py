@@ -8,7 +8,6 @@ from app.schemas.products import ProductCreate, Product as ProductShema, Product
 from app.db.db_depends import get_async_db
 from app.auth.user import get_current_seller
 
-
 # Создаём маршрутизатор для товаров
 router = APIRouter(
     prefix="/products",
@@ -62,7 +61,7 @@ async def get_all_products(
     total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
 
     rank_col = None
-    word_sum_col = None  #  для хранения коэффициента схожести триграмм
+    word_sum_col = None  # для хранения коэффициента схожести триграмм
     if search:
         search_value = search.strip()
         if search_value:
@@ -126,7 +125,6 @@ async def create_product(product: ProductCreate,
     Аргументы:
         product: Модель для создания товара
     Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
         current_user: Текущий аутентифицированный пользователь с ролью "seller"
     Возвращает:
         ProductSchema: Созданный товар
@@ -152,8 +150,6 @@ async def get_products_by_category(category_id: int, db: AsyncSession = Depends(
     Описание: Возвращает список товаров в указанной категории по её ID.
     Аргументы:
         category_id: ID категории для фильтрации товаров
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         List[ProductSchema]: Список активных товаров в указанной категории
     Исключения:
@@ -176,8 +172,6 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_async_db))
     Описание: Возвращает детальную информацию о товаре по его ID.
     Аргументы:
         product_id: ID товара для получения информа
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         ProductSchema: Детальная информация о товаре
     Исключения:
@@ -201,7 +195,6 @@ async def update_product(product_id: int, product: ProductCreate, db: AsyncSessi
         product_id: ID товара для обновления
         product: Модель с данными для обновления товара
     Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
         current_user: Текущий аутентифицированный пользователь с ролью "seller"
     Возвращает:
         ProductSchema: Обновленный товар
@@ -236,7 +229,6 @@ async def delete_product(product_id: int, db: AsyncSession = Depends(get_async_d
     Аргументы:
         product_id: ID товара для удаления
     Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
         current_user: Текущий аутентифицированный пользователь с ролью "seller"
     Возвращает:
         dict: Сообщение об успешном удалении

@@ -8,11 +8,10 @@ from app.utils import SECRET_KEY, ALGORITHM
 from app.models.users import User as UserModel
 from app.db.db_depends import get_async_db
 
-
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db:AsyncSession = Depends(get_async_db)):
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
     """
     Описание: Проверяет JWT токен и возвращает пользователя из базы данных.
               Выполняет проверку валидности токена, его срока действия и активного статуса пользователя.
@@ -70,7 +69,9 @@ async def get_current_seller(current_user: UserModel = Depends(get_current_user)
     """
     if current_user.role != "seller":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only sellers can perform this action")
+
     return current_user
+
 
 async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
     """

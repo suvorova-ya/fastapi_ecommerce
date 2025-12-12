@@ -4,15 +4,12 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.routers.router_depens import valid_product_id, recalculate_rating
-from app.schemas.reviews import ReviewsCreate,Reviews as ReviewsShema
+from app.schemas.reviews import ReviewsCreate, Reviews as ReviewsShema
 from app.models.reviews import Review as ReviewModel
 from app.models.products import Product as ProductModel
 from app.models.users import User as UserModel
 from app.db.db_depends import get_async_db
 from app.auth.user import get_current_buyer, get_current_user, get_current_admin
-
-
-
 
 router = APIRouter(
     prefix="/reviews",
@@ -21,12 +18,10 @@ router = APIRouter(
 
 
 @router.get("/", response_model=List[ReviewsShema])
-async def get_all_reviews(db:AsyncSession = Depends(get_async_db)):
+async def get_all_reviews(db: AsyncSession = Depends(get_async_db)):
     """
     Доступ: Разрешён всем (аутентификация не требуется).
     Описание: Возвращает список всех активных отзывов (is_active = True) о товарах.
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         List[ReviewSchema]: Список всех активных отзывов
     """
@@ -34,15 +29,13 @@ async def get_all_reviews(db:AsyncSession = Depends(get_async_db)):
     return reviews.all()
 
 
-@router.get("/products/{product_id}",response_model=List[ReviewsShema])
+@router.get("/products/{product_id}", response_model=List[ReviewsShema])
 async def get_product_reviews(product_id: int, db: AsyncSession = Depends(get_async_db)):
     """
     Доступ: Разрешён всем (аутентификация не требуется).
     Описание: Получение отзывов о конкретном товаре.
     Аргументы:
         product_id: ID товара для фильтрации отзывов
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         List[ReviewSchema]: Список активных отзывов для данного товара
     Исключения:
@@ -50,15 +43,15 @@ async def get_product_reviews(product_id: int, db: AsyncSession = Depends(get_as
     """
     # проверяем что товар существует и активен
     await db.scalar(select(ProductModel).where(ProductModel.id == product_id,
-                                                         ProductModel.is_active == True))
+                                               ProductModel.is_active == True))
 
     reviews = await db.scalars(select(ReviewModel).where(ReviewModel.product_id == product_id,
-                                                         ReviewModel.is_active== True)                                                 )
+                                                         ReviewModel.is_active == True))
     return reviews.all()
 
 
 @router.post("/", response_model=ReviewsShema, status_code=status.HTTP_201_CREATED)
-async def create_review(review: ReviewsCreate, db : AsyncSession = Depends(get_async_db),
+async def create_review(review: ReviewsCreate, db: AsyncSession = Depends(get_async_db),
                         current_user: UserModel = Depends(get_current_buyer)):
     """
     Доступ: Только аутентифицированные пользователи с ролью "buyer".
@@ -66,8 +59,6 @@ async def create_review(review: ReviewsCreate, db : AsyncSession = Depends(get_a
               После добавления отзыва пересчитывает средний рейтинг товара.
     Аргументы:
         review: Модель для создания отзыва
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
         current_user: Текущий аутентифицированный пользователь с ролью "buyer"
     Возвращает:
         ReviewSchema: Созданный отзыв
@@ -82,7 +73,7 @@ async def create_review(review: ReviewsCreate, db : AsyncSession = Depends(get_a
 
     # проверяем что отзыва еще нет
     existing_review = await db.scalar(select(ReviewModel).where(ReviewModel.product_id == review.product_id,
-                                                ReviewModel.user_id == current_user.id))
+                                                                ReviewModel.user_id == current_user.id))
     if existing_review:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The review already exists")
 
@@ -100,10 +91,9 @@ async def create_review(review: ReviewsCreate, db : AsyncSession = Depends(get_a
     return review_db
 
 
-
 @router.delete("/{review_id}")
 async def delete_review(review_id: int, db: AsyncSession = Depends(get_async_db),
-                        current_user:UserModel = Depends(get_current_admin)):
+                        current_user: UserModel = Depends(get_current_admin)):
     """
         Доступ: Только пользователи с ролью "admin".
         Описание: Выполняет мягкое удаление отзыва по review_id, устанавливая is_active = False.
@@ -111,7 +101,6 @@ async def delete_review(review_id: int, db: AsyncSession = Depends(get_async_db)
         Аргументы:
             review_id: ID отзыва для удаления
         Зависимости:
-            db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
             current_user: Текущий аутентифицированный пользователь
         Возвращает:
             dict: Сообщение об успешном удалении
@@ -121,7 +110,7 @@ async def delete_review(review_id: int, db: AsyncSession = Depends(get_async_db)
     """
 
     review = await db.scalar(select(ReviewModel).where(ReviewModel.id == review_id,
-                                         ReviewModel.is_active == True))
+                                                       ReviewModel.is_active == True))
     # проверяем что отзыв существует и активен
     if not review:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found or already inactive")
@@ -139,6 +128,3 @@ async def delete_review(review_id: int, db: AsyncSession = Depends(get_async_db)
     await db.commit()
 
     return {"message": "Review deleted"}
-
-
-

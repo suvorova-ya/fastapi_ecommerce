@@ -16,15 +16,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/create-admin", status_code=status.HTTP_201_CREATED)
-async def create_admin(user:UserCreate, db: AsyncSession = Depends(get_async_db)):
+async def create_admin(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
     """
         Доступ: публичный (однократное использование)
         Описание: Регистрирует первого пользователя с ролью "admin" в системе.
                   Может быть использован только один раз для создания первоначального администратора.
         Аргументы:
             user: Данные для создания администратора (email и password)
-        Зависимости:
-            db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
         Возвращает:
             UserModel: Созданный объект администратора
         Исключения:
@@ -38,7 +36,7 @@ async def create_admin(user:UserCreate, db: AsyncSession = Depends(get_async_db)
 
     user_email = await db.scalar(select(UserModel).where(UserModel.email == user.email))
     if user_email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Email already registered" )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
         # Создание объекта пользователя с хешированным паролем
     db_user = UserModel(
@@ -52,17 +50,14 @@ async def create_admin(user:UserCreate, db: AsyncSession = Depends(get_async_db)
     return db_user
 
 
-
 @router.post("/", response_model=UserSchema, status_code=status.HTTP_201_CREATED)
-async def create_user(user:UserCreate, db: AsyncSession = Depends(get_async_db)):
+async def create_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
     """
     Доступ: публичный
     Описание: Регистрирует нового пользователя с ролью 'buyer' или 'seller'.
               Выполняет проверку уникальности email перед созданием пользователя.
     Аргументы:
         user: Данные для создания пользователя (email, password и role)
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         UserSchema: Созданный объект пользователя
     Исключения:
@@ -75,9 +70,9 @@ async def create_user(user:UserCreate, db: AsyncSession = Depends(get_async_db))
 
     # Создание объекта пользователя с хешированным паролем
     db_user = UserModel(
-        email = user.email,
-        hashed_password = hash_password(user.password),
-        role = user.role
+        email=user.email,
+        hashed_password=hash_password(user.password),
+        role=user.role
     )
     # Добавление в сессию и сохранение в базе
     db.add(db_user)
@@ -93,14 +88,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
               Refresh_token сохраняется в HTTP-only cookie для безопасности.
     Аргументы:
         form_data: Данные формы аутентификации (username=email, password)
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         JSONResponse: Access token в теле ответа и refresh token в cookie
     Исключения:
         401 Unauthorized: Если email или пароль неверны
     """
-    #SQL-запрос, который ищет запись в таблице users, где поле email совпадает с переданным form_data.username
+    # SQL-запрос, который ищет запись в таблице users, где поле email совпадает с переданным form_data.username
     user = await db.scalar(select(UserModel).where(UserModel.email == form_data.username))
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -108,8 +101,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub" : user.email, "role": user.role, "id": user.id})
-    refresh_token = create_refresh_token(data={"sub" : user.email, "role": user.role, "id": user.id})
+    access_token = create_access_token(data={"sub": user.email, "role": user.role, "id": user.id})
+    refresh_token = create_refresh_token(data={"sub": user.email, "role": user.role, "id": user.id})
     response = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
     response.set_cookie(
         key=COOKIE_NAME,
@@ -132,8 +125,6 @@ async def refresh_access_token(request: Request, db: AsyncSession = Depends(get_
               Выполняет проверку валидности refresh token и активного статуса пользователя.
     Аргументы:
         request: HTTP запрос для извлечения refresh token из cookie
-    Зависимости:
-        db: асинхронная сессия SQLAlchemy для работы с базой данных PostgreSQL
     Возвращает:
         dict: Новый access token
     Исключения:
@@ -156,10 +147,10 @@ async def refresh_access_token(request: Request, db: AsyncSession = Depends(get_
     except jwt.exceptions:
         raise jwt.exceptions
     user = await db.scalar(select(UserModel).where(UserModel.email == email, UserModel.is_active == True
-))
+                                                   ))
     if not user:
         raise credentials_exception
 
-    access_token = create_access_token(data={"sub" : user.email, "role": user.role, "id": user.id})
+    access_token = create_access_token(data={"sub": user.email, "role": user.role, "id": user.id})
 
     return {"access_token": access_token, "token_type": "bearer"}

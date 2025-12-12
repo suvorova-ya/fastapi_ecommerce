@@ -1,6 +1,7 @@
+from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import String, Float, Integer, Boolean, ForeignKey, text, Computed, Index
+from sqlalchemy import String, Float, Integer, Boolean, ForeignKey, text, Computed, Index, Numeric
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,7 +13,7 @@ class Product(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(500))
-    price: Mapped[float] = mapped_column(Float, nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     image_url: Mapped[Optional[str]] = mapped_column(String(200))
     stock: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -31,7 +32,10 @@ class Product(Base):
                                           )
 
     category: Mapped["Category"] = relationship(back_populates="products")
+    cart_items: Mapped[list["CartItem"]] = relationship("CartItem", back_populates="product",
+                                                        cascade="all, delete-orphan")
     seller = relationship("User", back_populates="products")
+
 
     __table_args__ = (
         Index("ix_products_tsv_gin",
