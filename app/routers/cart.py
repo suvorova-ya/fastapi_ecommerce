@@ -10,7 +10,7 @@ from app.db.db_depends import get_async_db
 from app.models.cart_items import CartItem as CartItemModel
 from app.models.products import Product as ProductModel
 from app.models.users import User as UserModel
-from app.routers.router_depens import _ensure_product_available, _get_cart_item
+from app.routers.router_depens import valid_product_id, _get_cart_item
 from app.schemas.cart_items import (
     Cart as CartSchema,
     CartItem as CartItemSchema,
@@ -86,7 +86,7 @@ async def add_item_to_cart(
             detail="Вы не можете купить собственный товар."
         )
 
-    await _ensure_product_available(db, payload.product_id)
+    await valid_product_id(payload.product_id, db)
 
     cart_item = await _get_cart_item(db, current_user.id, payload.product_id)
     if cart_item:
@@ -122,7 +122,7 @@ async def update_cart_item(
                get_current_user: проверка аутентификации и получение текущего пользователя
        Возвращает: объект CartItemSchema с обновленными данными элемента корзины
        """
-    await _ensure_product_available(db, product_id)
+    await valid_product_id(product_id,db)
 
     cart_item = await _get_cart_item(db, current_user.id, product_id)
     if not cart_item:

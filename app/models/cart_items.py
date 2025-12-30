@@ -7,6 +7,7 @@ from app.db.database import Base
 
 
 class CartItem(Base):
+    """модель корзины"""
     __tablename__ = "cart_items"
 
     __table_args__ = (

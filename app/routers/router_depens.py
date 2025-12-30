@@ -71,32 +71,6 @@ async def recalculate_rating(product_id: int, db: AsyncSession = Depends(get_asy
     return avg_grades
 
 
-async def _ensure_product_available(db: AsyncSession, product_id: int) -> None:
-    """
-      Описание:
-          Проверяет существование и активность товара в базе данных.
-          Выполняет поиск товара по указанному ID с фильтром по активности.
-     Аргументы:
-          product_id: ID товара для проверки его существования и активности
-    Исключения:
-          HTTPException:
-              - status_code=404: если товар не найден или неактивен
-      Возвращает:
-          None: функция ничего не возвращает при успешной проверке
-      """
-    result = await db.scalars(
-        select(ProductModel).where(
-            ProductModel.id == product_id,
-            ProductModel.is_active == True,
-        )
-    )
-    product = result.first()
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found or inactive",
-        )
-
 
 async def _get_cart_item(
         db: AsyncSession, user_id: int, product_id: int
